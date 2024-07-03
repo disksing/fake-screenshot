@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>字幕截图生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 text-gray-900">
+    <div class="container mx-auto max-w-5xl min-w-fit">
+        <header class="bg-blue-500 text-white p-10 text-center">
+            <h1 class="text-4xl font-bold mb-10">字幕截图生成器</h1>
+            <p class="text-xl">“都有截图了一定是真的”</p>
+        </header>
+
+        <main class="flex flex-wrap justify-center">
+            <div class="column bg-white p-6 rounded shadow" style="width: 512px;">
+                <label for="image-select" class="block text-lg font-medium mb-2">选择英雄</label>
+                <select id="image-select" class="w-full p-2 border rounded mb-4">
+                    <option value="郭德纲.jpg">郭德纲</option>
+                    <option value="刘能.jpg">刘能</option>
+                    <option value="鲁迅.jpg">鲁迅</option>
+                    <option value="罗永浩.jpg">罗永浩</option>
+                    <option value="马斯克.jpg">马斯克</option>
+                    <option value="马云.jpg">马云</option>
+                    <option value="莫言.jpg">莫言</option>
+                    <option value="乔布斯.jpg">乔布斯</option>
+                    <option value="杨澜.jpg">杨澜</option>
+                    <option value="于丹.jpg">于丹</option>
+                </select>
+
+                <label for="image-upload" class="block text-lg font-medium mb-2"
+                    style="background-color: #3B82F6; color: white; font-weight: 600; padding: 0.5rem 1rem; border-radius: 0.25rem; cursor: pointer; transition: background-color 0.3s ease;">上传本机英雄</label>
+                <input type="file" id="image-upload" class="w-full p-2 border rounded mb-4" style="display:none;">
+
+                <label for=" text-input" class="block text-lg font-medium mb-2">台词（一排不要太长了）</label>
+                <textarea id="text-input" rows="8" class="w-full p-2 border rounded mb-4"></textarea>
+
+                <div class="mb-4">
+                    <label for="fontsize-slider" class="block text-lg font-medium mb-2">字号</label>
+                    <input type="range" id="fontsize-slider" class="w-full" min="10" max="50" value="20">
+                </div>
+
+                <div class="mb-4">
+                    <label for="line-height-slider" class="block text-lg font-medium mb-2">字幕行高</label>
+                    <input type="range" id="line-height-slider" class="w-full" min="20" max="100" value="50">
+                </div>
+
+                <div class="mb-4">
+                    <input type="checkbox" id="watermark-checkbox" class="mr-2">
+                    <label for="watermark-checkbox" class="text-lg font-medium">去水印（仅限关注象牙山刘能后使用，点了不关注的是小狗）</label>
+                </div>
+
+                <button id="save-btn"
+                    class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">保存图片</button>
+            </div>
+
+            <div class="column bg-white rounded shadow" style="width: 512px;">
+                <canvas id="canvas" class="w-full h-auto border rounded"></canvas>
+            </div>
+        </main>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const imageSelect = document.getElementById('image-select');
+            const imageUpload = document.getElementById('image-upload');
+            const textInput = document.getElementById('text-input');
+            const fontSizeSlider = document.getElementById('fontsize-slider');
+            const lineHeightSlider = document.getElementById('line-height-slider');
+            const watermarkCheckbox = document.getElementById('watermark-checkbox');
+            const saveBtn = document.getElementById('save-btn');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const canvasWidth = 512;
+
+            const quotes = [
+                "我敬佩两种人\n年轻时陪男人过苦日子的女人\n富裕时陪女人过好日子的男人",
+                "人生就像一杯茶\n不会苦一辈子\n但总会苦一阵子",
+                "不要总拿自己跟别人比\n你羡慕别人瘦\n别人还羡慕你肠胃好\n你羡慕别人有钱\n别人还羡慕没人找你借钱",
+                "彪悍的人生不需要解释\n只要你按时达到目的地\n很少有人在乎你开的是奔驰还是拖拉机",
+                "如果你不够优秀\n人脉是不值钱的\n它不是追求来的\n而是吸引来的\n只有等价的交换\n才能得到合理的帮助\n虽然听起来很冷\n但这是事实",
+                "喜欢在你背后说三道四\n捏造故事的人\n无非就三个原因\n没达到你的层次\n你有的东西他没有\n模仿你的生活方式未遂",
+                "做一个特别简单的人\n好相处就处\n不好相处就不处\n不要一厢情愿去迎合别人\n你努力合群的样子并不漂亮\n不必对每个人好\n他们又不给你打钱"
+            ];
+            const selectedQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            textInput.placeholder = selectedQuote;
+
+            canvas.width = canvasWidth;
+            let image = new Image();
+            image.onload = renderImage;
+
+            imageSelect.addEventListener('change', () => {
+                image.src = 'heros/' + imageSelect.value;
+            });
+
+            imageSelect.selectedIndex = Math.floor(Math.random() * imageSelect.options.length);
+            imageSelect.dispatchEvent(new Event('change'));
+
+            imageUpload.addEventListener('change', () => {
+                const file = imageUpload.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        image.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            textInput.addEventListener('input', renderImage);
+            fontSizeSlider.addEventListener('input', renderImage);
+            lineHeightSlider.addEventListener('input', renderImage);
+            watermarkCheckbox.addEventListener('change', renderImage);
+
+            saveBtn.addEventListener('click', () => {
+                const link = document.createElement('a');
+                link.download = 'screenshot.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+
+            function renderImage() {
+                const scaleFactor = canvasWidth / image.width;
+                const scaledHeight = image.height * scaleFactor;
+                const lineHeight = parseInt(lineHeightSlider.value);
+                const fontSize = parseInt(fontSizeSlider.value);
+                const imageLineHeight = lineHeight / scaleFactor;
+                const value = textInput.value || textInput.placeholder;
+                const lines = value.split('\n');
+                canvas.width = canvasWidth;
+                canvas.height = scaledHeight;
+                if (lines.length > 1) {
+                    canvas.height += (lines.length - 1) * lineHeight;
+                }
+                ctx.drawImage(image, 0, 0, canvas.width, scaledHeight);
+                ctx.font = fontSize+'px Arial';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'black';
+                ctx.shadowBlur = 5;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+                for (let i = 0; i < lines.length; i++) {
+                    if (i > 0) {
+                        const sx = 0, sy = image.height - imageLineHeight, sw = image.width, sh = imageLineHeight;
+                        const dx = 0, dy = scaledHeight + (i-1)*lineHeight, dw = canvas.width, dh = lineHeight;
+                        ctx.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
+                    }
+                    const y = scaledHeight + i * lineHeight - (lineHeight - fontSize) / 2;
+                    ctx.fillText(lines[i], canvas.width / 2, y);
+                }
+                if (!watermarkCheckbox.checked) {
+                    ctx.font = '12px Arial';
+                    ctx.fillStyle = '#cccccc';
+                    ctx.textAlign = 'right';
+                    ctx.shadowColor = 'black';
+                    ctx.shadowBlur = 2;
+                    ctx.shadowOffsetX = 1;
+                    ctx.shadowOffsetY = 1;
+                    ctx.fillText('字幕截图生成器', canvas.width, 12);
+                    ctx.fillText('@disksing', canvas.width, 24);
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
