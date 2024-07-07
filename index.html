@@ -86,8 +86,7 @@
                 "喜欢在你背后说三道四\n捏造故事的人\n无非就三个原因\n没达到你的层次\n你有的东西他没有\n模仿你的生活方式未遂",
                 "做一个特别简单的人\n好相处就处\n不好相处就不处\n不要一厢情愿去迎合别人\n你努力合群的样子并不漂亮\n不必对每个人好\n他们又不给你打钱"
             ];
-            const selectedQuote = quotes[Math.floor(Math.random() * quotes.length)];
-            textInput.placeholder = selectedQuote;
+            textInput.placeholder = quotes[Math.floor(Math.random() * quotes.length)];
 
             canvas.width = canvasWidth;
             let image = new Image();
@@ -132,10 +131,8 @@
                 const value = textInput.value || textInput.placeholder;
                 const lines = value.split('\n');
                 canvas.width = canvasWidth;
-                canvas.height = scaledHeight;
-                if (lines.length > 1) {
-                    canvas.height += (lines.length - 1) * lineHeight;
-                }
+                canvas.height = scaledHeight +  (lines.length - 1) * lineHeight;
+                ctx.save();
                 ctx.drawImage(image, 0, 0, canvas.width, scaledHeight);
                 ctx.font = fontSize+'px Arial';
                 ctx.fillStyle = 'white';
